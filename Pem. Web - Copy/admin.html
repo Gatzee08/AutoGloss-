@@ -295,11 +295,14 @@
                                     <option value="Cat Eksterior">Cat Eksterior</option>
                                     <option value="Aksesoris">Aksesoris</option>
                                 </select>
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <button class="btn-admin-action-outline" onclick="AdminApp.syncWithRestApi()" title="Sinkronkan data dengan REST API">
+                                    <i class="fa-solid fa-arrows-rotate"></i> Sinkron REST API
+                                </button>
+                                <button class="btn-admin-action" onclick="AdminApp.openAddProductModal()">
+                                    <i class="fa-solid fa-plus"></i> Tambah Produk Baru
+                                </button>
                             </div>
-
-                            <button class="btn-admin-action" onclick="AdminApp.openAddProductModal()">
-                                <i class="fa-solid fa-plus"></i> Tambah Produk Baru
-                            </button>
                         </div>
 
                         <div class="table-responsive">

@@ -204,6 +204,17 @@
                     </div>
                 </div>
 
+                <!-- Flash Sale Loading & Error States -->
+                <div class="api-loading-state-sm" id="flashSaleLoadingState" style="display: none;">
+                    <div class="api-spinner-sm"></div>
+                    <span>Memuat promo spesial dari REST API...</span>
+                </div>
+                <div class="api-error-state-sm" id="flashSaleErrorState" style="display: none;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>Promo gagal dimuat dari server.</span>
+                    <button type="button" class="btn-retry-inline" onclick="StoreApp.retryFetch()">Coba Lagi</button>
+                </div>
+
                 <!-- Promo Products Grid -->
                 <div class="products-grid" id="flashSaleGrid">
                     <!-- Populated dynamically via js/store.js -->
@@ -230,6 +241,40 @@
                 <div class="section-header">
                     <div class="section-subtitle">Semua Produk</div>
                     <h2 class="section-title">Koleksi Cat Mobil & Bangunan Berkualitas</h2>
+                </div>
+
+                <!-- 🌐 REST API CONTROL & TESTING TOOLBAR (TASK 01 & STATE DEMO) -->
+                <div class="api-control-bar" id="apiControlBar">
+                    <div class="api-status-left">
+                        <div class="api-status-pill loading" id="apiStatusBadge">
+                            <span class="status-indicator-dot"></span>
+                            <span class="status-indicator-text" id="apiStatusText">Menghubungkan ke API...</span>
+                        </div>
+                        <div class="api-meta-item">
+                            <i class="fa-solid fa-server"></i>
+                            <span>Endpoint:</span>
+                            <code id="apiEndpointLabel">data/products.json</code>
+                        </div>
+                        <div class="api-meta-item" id="apiCountContainer">
+                            <i class="fa-solid fa-database"></i>
+                            <span id="apiCountBadge">0 Produk</span>
+                        </div>
+                    </div>
+                    <div class="api-status-right">
+                        <span class="api-action-label"><i class="fa-solid fa-flask-vial"></i> Pengujian State:</span>
+                        <button type="button" class="btn-api-action" id="btnRefreshApi" title="Fetch Ulang dari REST API">
+                            <i class="fa-solid fa-arrows-rotate"></i> Refresh
+                        </button>
+                        <button type="button" class="btn-api-action" id="btnSimulateLoading" title="Simulasi Loading Spinner (Delay 1.8 detik)">
+                            <i class="fa-solid fa-stopwatch"></i> Tes Loading
+                        </button>
+                        <button type="button" class="btn-api-action btn-api-danger" id="btnSimulateError" title="Simulasi Error 404 untuk Menguji Tombol Coba Lagi">
+                            <i class="fa-solid fa-bug"></i> Tes Error
+                        </button>
+                        <button type="button" class="btn-api-action" id="btnCustomEndpoint" title="Ubah URL Endpoint REST API">
+                            <i class="fa-solid fa-sliders"></i> URL API
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Controls & Filters -->
@@ -262,7 +307,63 @@
                     </div>
                 </div>
 
-                <!-- Products Grid Display -->
+                <!-- 🔄 API LOADING STATE (FEEDBACK LOADING SPINNER & SKELETON CARDS) -->
+                <div class="api-loading-state" id="productsLoadingState" role="status" aria-live="polite">
+                    <div class="api-spinner-wrapper">
+                        <div class="api-spinner"></div>
+                        <i class="fa-solid fa-spray-can-sparkles api-spinner-icon"></i>
+                    </div>
+                    <h3 class="api-loading-title">Menghubungkan ke REST API...</h3>
+                    <p class="api-loading-desc">Mengambil data produk dan mem-parsing JSON secara asinkron (Fetch API).</p>
+                    <div class="skeleton-grid">
+                        <div class="skeleton-card">
+                            <div class="skeleton-img shimmer"></div>
+                            <div class="skeleton-line shimmer title"></div>
+                            <div class="skeleton-line shimmer subtitle"></div>
+                            <div class="skeleton-line shimmer price"></div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img shimmer"></div>
+                            <div class="skeleton-line shimmer title"></div>
+                            <div class="skeleton-line shimmer subtitle"></div>
+                            <div class="skeleton-line shimmer price"></div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img shimmer"></div>
+                            <div class="skeleton-line shimmer title"></div>
+                            <div class="skeleton-line shimmer subtitle"></div>
+                            <div class="skeleton-line shimmer price"></div>
+                        </div>
+                        <div class="skeleton-card">
+                            <div class="skeleton-img shimmer"></div>
+                            <div class="skeleton-line shimmer title"></div>
+                            <div class="skeleton-line shimmer subtitle"></div>
+                            <div class="skeleton-line shimmer price"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ⚠️ API ERROR STATE (FEEDBACK ERROR HANDLING & TOMBOL COBA LAGI) -->
+                <div class="api-error-state" id="productsErrorState" style="display: none;" role="alert">
+                    <div class="api-error-icon-box">
+                        <i class="fa-solid fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="api-error-content">
+                        <h3 class="api-error-title">Gagal Mengambil Data dari REST API</h3>
+                        <p class="api-error-desc">Terjadi kendala saat melakukan HTTP request atau parsing respon JSON:</p>
+                        <div class="api-error-code-box" id="apiErrorMessage">HTTP 404: Not Found</div>
+                        <div class="api-error-actions">
+                            <button type="button" class="btn-retry-action" id="btnRetryFetch">
+                                <i class="fa-solid fa-rotate-right"></i> Coba Lagi
+                            </button>
+                            <button type="button" class="btn-reset-endpoint" id="btnResetEndpoint">
+                                <i class="fa-solid fa-rotate-left"></i> Pulihkan Endpoint Default
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products Grid Display (Task 02: Success State) -->
                 <div class="products-grid" id="productsGrid">
                     <!-- Populated dynamically via js/store.js -->
                 </div>
@@ -660,6 +761,34 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn-secondary" onclick="StoreApp.closeProofViewModal()">Tutup</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ⚙️ MODAL KONFIGURASI REST API ENDPOINT -->
+    <div class="modal-overlay" id="customApiModal">
+        <div class="modal-container" style="max-width: 520px;">
+            <div class="modal-header">
+                <h3><i class="fa-solid fa-sliders" style="color: var(--primary);"></i> Konfigurasi REST API Endpoint</h3>
+                <button class="btn-close-modal" onclick="StoreApp.closeCustomApiModal()" aria-label="Tutup Modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body" style="padding: 24px;">
+                <p style="font-size: 0.92rem; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.5;">
+                    Uji Fetch API menggunakan endpoint data lokal bawaan (<code>data/products.json</code>) atau tautan REST API eksternal (MockAPI / JSON Server).
+                </p>
+                <div class="checkout-form-group">
+                    <label for="inputCustomApiUrl" style="display:block; margin-bottom: 8px; font-weight:600;">URL Endpoint REST API:</label>
+                    <input type="text" id="inputCustomApiUrl" class="checkout-input" placeholder="data/products.json atau https://..." value="data/products.json">
+                    <small style="color: var(--text-muted); display: block; margin-top: 8px;">
+                        Status: <span id="customApiCurrentStatus" style="color: var(--accent-green); font-weight: 600;">Aktif</span>
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-secondary" onclick="StoreApp.resetDefaultApiUrl()">Default</button>
+                <button type="button" class="btn-primary" onclick="StoreApp.applyCustomApiUrl()">
+                    <i class="fa-solid fa-bolt"></i> Simpan & Hubungkan
+                </button>
             </div>
         </div>
     </div>

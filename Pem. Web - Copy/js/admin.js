@@ -28,6 +28,23 @@ const AdminApp = {
         this.loadSettings();
     },
 
+    /**
+     * TASK 01 & TASK 02: Sinkronisasi Data REST API ke Admin Panel
+     */
+    async syncWithRestApi() {
+        this.showToast('Menghubungkan ke REST API & mengambil data terbaru...', 'info');
+        try {
+            const items = await DataService.fetchProductsFromApi('data/products.json', { simulateDelay: 600 });
+            this.renderProductsTable();
+            this.renderStockTable();
+            this.renderDashboard();
+            this.showToast(`Berhasil sinkronisasi ${items.length} produk dari REST API!`, 'success');
+        } catch (err) {
+            console.error('[Admin REST API Sync Error]:', err);
+            this.showToast('Gagal sinkron REST API: ' + err.message, 'error');
+        }
+    },
+
     updateClock() {
         const clockEl = document.getElementById('adminClock');
         if (clockEl) {

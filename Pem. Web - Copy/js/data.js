@@ -520,10 +520,65 @@ const DataService = {
     // Products
     getProducts() {
         this.init();
-        return JSON.parse(localStorage.getItem(STORAGE_KEYS.PRODUCTS) || '[]');
+        try {
+            const raw = localStorage.getItem(STORAGE_KEYS.PRODUCTS);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    return parsed;
+                }
+            }
+        } catch (e) {
+            console.warn('[DataService] Gagal parsing produk dari localStorage:', e);
+        }
+        // Fallback default jika kosong
+        this.saveProducts(INITIAL_PRODUCTS);
+        return INITIAL_PRODUCTS;
     },
     saveProducts(products) {
         localStorage.setItem(STORAGE_KEYS.PRODUCTS, JSON.stringify(products));
+    },
+
+    /**
+     * TASK 01: Connect to API (fetch API & parsing JSON)
+     * Mengambil data produk dari REST API endpoint
+     * @param {string} url - URL REST API (default: 'data/products.json')
+     * @param {object} options - Opsi fetch (timeout, simulateDelay, simulateError)
+     * @returns {Promise<Array>} Array produk hasil parsing JSON
+     */
+    async fetchProductsFromApi(url = 'data/products.json', options = {}) {
+        let requestUrl = url;
+
+        if (options.simulateError) {
+            requestUrl = 'data/endpoint-error-404.json';
+        }
+
+        const response = await fetch(requestUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json'
+            }
+        });
+
+        if (options.simulateDelay) {
+            const delayMs = typeof options.simulateDelay === 'number' ? options.simulateDelay : 1500;
+            await new Promise(resolve => setTimeout(resolve, delayMs));
+        }
+
+        if (!response.ok) {
+            throw new Error(`HTTP Error ${response.status}: ${response.statusText || 'Gagal memuat data dari REST API'}`);
+        }
+
+        const result = await response.json();
+        const items = Array.isArray(result) ? result : (result.data || result.products || []);
+
+        if (!Array.isArray(items)) {
+            throw new Error('Format respon API tidak valid. Format harus berupa Array atau Object dengan properti "data"');
+        }
+
+        // Simpan hasil ke cache localStorage agar modul Admin & Keranjang tetap sinkron
+        this.saveProducts(items);
+        return items;
     },
     getProductById(id) {
         const products = this.getProducts();

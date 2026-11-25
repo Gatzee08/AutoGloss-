@@ -1,17 +1,29 @@
-[README-VERIFIKASI-PEMBAYARAN.txt](https://github.com/user-attachments/files/32764321/README-VERIFIKASI-PEMBAYARAN.txt)
-AUTO GLOSS PAINT HUB — VERIFIKASI PEMBAYARAN ADMIN
+# AUTO GLOSS PAINT HUB
 
-Perubahan:
-1. Pesanan baru selalu berstatus pembayaran "Belum Lunas".
-2. Hanya aksi Admin "Konfirmasi Masuk" / "Tandai Lunas" yang mengubah pembayaran menjadi "Lunas".
-3. Halaman pelanggan menampilkan badge besar LUNAS atau BELUM LUNAS.
-4. Bukti pembayaran tidak otomatis membuat pesanan Lunas; bukti hanya menjadi bahan pemeriksaan Admin.
-5. Pembayaran yang ditolak tetap BELUM LUNAS dan pelanggan dapat mengunggah bukti baru.
-6. Dashboard dan tabel Admin memprioritaskan pesanan yang belum terkonfirmasi.
-7. Status pembayaran dan status pesanan dipisahkan.
-8. Jika halaman pelanggan dan admin dibuka pada tab berbeda di browser/device yang sama, perubahan localStorage akan menyegarkan status pelanggan otomatis.
+Proyek Aplikasi Penjualan Cat Mobil & Body Coating - Mata Kuliah Pemrograman Web (Semester 5).
 
-CATATAN PENTING:
-Versi proyek ini masih menggunakan localStorage karena proyek asal berupa website HTML/CSS/JavaScript tanpa backend/database.
-Artinya data pesanan dan konfirmasi Admin hanya tersimpan pada browser/device yang sama.
-Untuk penggunaan produksi dengan pelanggan dan Admin pada perangkat berbeda, localStorage perlu diganti dengan backend/database (mis. PHP+MySQL, Node/Express+PostgreSQL/MySQL, atau Firebase/Supabase).
+---
+
+## 📂 Struktur Proyek
+
+1. **`autogloss-laravel/` (Materi Week 9: Laravel CRUD + Eloquent ORM)**
+   - Backend & Frontend terintegrasi menggunakan **Laravel Framework**.
+   - Migrasi database 5 tabel (`categories`, `products`, `customers`, `orders`, `order_items`).
+   - Model Eloquent ORM dengan relasi One-to-Many (`hasMany`, `belongsTo`), agregasi, dan eager loading (`with()`, `withCount()`).
+   - Resource Controller dengan method `index`, `create`, `store`, `show`, `edit`, `update`, `destroy`.
+   - Blade templating responsif bertema dark otomotif + Tailwind CSS + FontAwesome 6.
+   - Resource routing & verifikasi status pembayaran admin.
+   - Dokumentasi lengkap materi Week 9: [README-WEEK9-CRUD-ORM.md](autogloss-laravel/README-WEEK9-CRUD-ORM.md).
+
+2. **`Pem. Web - Copy/` (Materi Sebelumnya: Frontend SPA & REST API Fetch)**
+   - Versi prototipe statis HTML/CSS/JavaScript.
+   - Menggunakan Fetch API ke `data/products.json` dan penyimpanan client-side `localStorage`.
+
+---
+
+## ⚡ Cara Cepat Menjalankan Laravel (Week 9)
+
+1. **Menjalankan Server:**
+   - Cukup klik ganda file **`jalankan-server.bat`**, lalu buka browser di `http://127.0.0.1:8000`.
+2. **Migrasi Database:**
+   - Cukup klik ganda file **`migrate-database.bat`** (pastikan MySQL di XAMPP Control Panel aktif jika menggunakan MySQL).

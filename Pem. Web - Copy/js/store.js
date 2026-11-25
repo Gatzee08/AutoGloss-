@@ -14,12 +14,36 @@ const StoreApp = {
     appliedVoucher: null,
     selectedProduct: null,
 
-    init() {
-        this.renderAll();
+    // ====================================================================
+    // REST API & FETCH API STATE MANAGEMENT
+    // ====================================================================
+    apiState: {
+        status: 'idle', // 'idle' | 'loading' | 'success' | 'error'
+        endpoint: 'data/products.json',
+        error: null,
+        lastUpdated: null,
+        simulateDelay: false,
+        simulateError: false
+    },
+    products: [], // Menyimpan data produk hasil parsing JSON dari REST API
+
+    async init() {
         this.setupEventListeners();
+        this.setupApiControls();
         this.setupOrderSync();
         this.startPromoCountdown();
         this.updateCartUI();
+        this.renderOrders();
+        this.renderBranches();
+
+        // 🚀 Tampilkan produk secara instan dari data lokal/cache agar produk SELALU terlihat
+        this.products = DataService.getProducts();
+        this.renderCategoryTiles();
+        this.renderProducts();
+        this.renderFlashSale();
+
+        // TASK 01: Panggil Fetch API untuk sinkronisasi asinkron dari REST API
+        await this.fetchProducts();
     },
 
     setupOrderSync() {
@@ -38,41 +62,363 @@ const StoreApp = {
         });
     },
 
-    renderAll() {
-        this.renderFlashSale();
-        this.renderCategoryTiles();
-        this.renderProducts();
-        this.renderOrders();
-        this.renderBranches();
+    // ====================================================================
+    // TASK 01: Connect to API (fetch API & parsing JSON)
+    // ====================================================================
+    /**
+     * Mengambil data produk secara asinkron dari REST API menggunakan Fetch API,
+     * memvalidasi status respon HTTP, dan mem-parsing body JSON ke object JavaScript.
+     * 
+     * @param {string|null} customUrl - URL endpoint alternatif (opsional)
+     * @returns {Promise<Array>} Array data produk yang berhasil diparsing
+     */
+    async fetchProducts(customUrl = null) {
+        const endpoint = customUrl || this.apiState.endpoint;
+        this.apiState.endpoint = endpoint;
+        this.apiState.status = 'loading';
+        this.apiState.error = null;
+
+        // Feedback State 1: Tampilkan Loading Spinner & Skeleton Loader
+        this.renderApiState();
+
+        try {
+            let requestUrl = endpoint;
+
+            // Jika simulasi error aktif (untuk pengujian tombol Coba Lagi)
+            if (this.apiState.simulateError) {
+                requestUrl = 'data/endpoint-error-404-simulation.json';
+            }
+
+            console.log(`[REST API] Menghubungi: ${requestUrl}`);
+
+            // Cek apakah dibuka langsung dengan protokol file:/// (tanpa web server)
+            const isFileProtocol = window.location.protocol === 'file:';
+            let items = [];
+
+            if (isFileProtocol && !this.apiState.simulateError && endpoint === 'data/products.json') {
+                // Di peramban modern, protokol file:/// membatasi fetch() CORS.
+                // Tetap lakukan fetch(), dan sediakan fallback data lokal jika browser memblokir file:///
+                try {
+                    const response = await fetch(requestUrl);
+                    if (response.ok) {
+                        const parsedData = await response.json();
+                        items = Array.isArray(parsedData) ? parsedData : (parsedData.data || []);
+                    } else {
+                        throw new Error(`HTTP Error ${response.status}`);
+                    }
+                } catch (corsErr) {
+                    console.warn('[REST API] Protokol file:// aktif, menggunakan data cadangan lokal:', corsErr);
+                    items = DataService.getProducts();
+                }
+            } else {
+                // Protokol HTTP/HTTPS normal (misal Live Server atau localhost)
+                const response = await fetch(requestUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                // Simulasi delay (misal tombol Tes Loading diklik agar spinner terlihat)
+                if (this.apiState.simulateDelay) {
+                    await new Promise(resolve => setTimeout(resolve, 1800));
+                }
+
+                // 2. Validasi HTTP Status (200 - 299)
+                if (!response.ok) {
+                    throw new Error(`HTTP Error ${response.status}: ${response.statusText || 'Gagal terhubung ke REST API'}`);
+                }
+
+                // 3. Parsing JSON dari Response Body
+                const parsedData = await response.json();
+                console.log('[REST API] Respon JSON berhasil di-parse:', parsedData);
+
+                // 4. Ekstraksi data produk
+                if (Array.isArray(parsedData)) {
+                    items = parsedData;
+                } else if (parsedData && Array.isArray(parsedData.data)) {
+                    items = parsedData.data;
+                } else if (parsedData && Array.isArray(parsedData.products)) {
+                    items = parsedData.products;
+                } else {
+                    throw new Error('Format JSON API tidak valid: payload harus berupa Array atau memiliki properti "data"');
+                }
+            }
+
+            if (!Array.isArray(items) || items.length === 0) {
+                items = DataService.getProducts();
+            }
+
+            // Feedback State 2: Success
+            this.products = items;
+            this.apiState.status = 'success';
+            this.apiState.lastUpdated = new Date();
+
+            // Simpan ke LocalStorage agar modul Keranjang & Admin tetap sinkron
+            DataService.saveProducts(items);
+
+            // ====================================================================
+            // TASK 02: Display API Data (DOM manipulation dinamis dari API)
+            // ====================================================================
+            this.renderApiState();
+            this.renderFlashSale();
+            this.renderCategoryTiles();
+            this.renderProducts();
+
+            return items;
+        } catch (error) {
+            console.error('[REST API Fetch Error]:', error);
+            // Feedback State 3: Error Handling
+            this.apiState.status = 'error';
+            this.apiState.error = error.message || 'Koneksi ke server REST API terputus. Silakan coba lagi.';
+
+            // Pastikan produk tetap ada dari data cadangan!
+            if (!this.products || this.products.length === 0) {
+                this.products = DataService.getProducts();
+            }
+
+            // Render antarmuka error dan siapkan tombol Coba Lagi
+            this.renderApiState();
+            this.renderFlashSale();
+            this.renderCategoryTiles();
+            this.renderProducts();
+        }
+    },
+
+    // ====================================================================
+    // HANDLE API STATE: Tombol Coba Lagi (Retry Button Action)
+    // ====================================================================
+    /**
+     * Dipanggil saat pengguna mengklik tombol "Coba Lagi" ketika terjadi error.
+     * Mengulang proses pemanggilan Fetch API secara otomatis tanpa refresh halaman.
+     */
+    retryFetch() {
+        console.log('[REST API] Menjalankan retryFetch (Coba Lagi)...');
+        // Reset flag simulasi error jika sedang aktif
+        this.apiState.simulateError = false;
+        this.showToast('Mencoba menyambungkan kembali ke REST API...', 'info');
+
+        // Panggil kembali fetchProducts
+        this.fetchProducts();
+    },
+
+    // ====================================================================
+    // HANDLE API STATE: Visual Feedback (Spinner, Success, Error UI)
+    // ====================================================================
+    renderApiState() {
+        const loadingEl = document.getElementById('productsLoadingState');
+        const errorEl = document.getElementById('productsErrorState');
+        const gridEl = document.getElementById('productsGrid');
+        const statusBadge = document.getElementById('apiStatusBadge');
+        const statusText = document.getElementById('apiStatusText');
+        const endpointLabel = document.getElementById('apiEndpointLabel');
+        const countBadge = document.getElementById('apiCountBadge');
+        const errorMsgEl = document.getElementById('apiErrorMessage');
+
+        const flashLoading = document.getElementById('flashSaleLoadingState');
+        const flashError = document.getElementById('flashSaleErrorState');
+        const flashGrid = document.getElementById('flashSaleGrid');
+
+        if (endpointLabel) {
+            endpointLabel.innerText = this.apiState.endpoint;
+        }
+
+        // 1. STATE: LOADING
+        if (this.apiState.status === 'loading') {
+            if (loadingEl) loadingEl.style.display = 'block';
+            if (errorEl) errorEl.style.display = 'none';
+            // Tetap biarkan grid produk terlihat selama loading agar tidak flicker
+            if (gridEl) gridEl.style.display = 'grid';
+
+            if (flashLoading) flashLoading.style.display = 'flex';
+            if (flashError) flashError.style.display = 'none';
+
+            if (statusBadge) {
+                statusBadge.className = 'api-status-pill loading';
+                if (statusText) statusText.innerText = 'Memuat API...';
+            }
+        }
+        // 2. STATE: ERROR (TETAP TAMPILKAN PRODUK DI BAWAH PESAN ERROR)
+        else if (this.apiState.status === 'error') {
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (errorEl) errorEl.style.display = 'flex';
+            // PENTING: Produk tetap ditampilkan di bawah pesan galat!
+            if (gridEl) gridEl.style.display = 'grid';
+
+            if (flashLoading) flashLoading.style.display = 'none';
+            if (flashError) flashError.style.display = 'flex';
+            if (flashGrid) flashGrid.style.display = 'grid';
+
+            if (errorMsgEl) {
+                errorMsgEl.innerText = this.apiState.error || 'HTTP Network Error: Tidak dapat terhubung ke REST API';
+            }
+
+            if (statusBadge) {
+                statusBadge.className = 'api-status-pill error';
+                if (statusText) statusText.innerText = 'Gagal (Mode Cadangan Aktif)';
+            }
+            if (countBadge) {
+                countBadge.innerText = `${(this.products || []).length} Produk`;
+            }
+        }
+        // 3. STATE: SUCCESS
+        else if (this.apiState.status === 'success') {
+            if (loadingEl) loadingEl.style.display = 'none';
+            if (errorEl) errorEl.style.display = 'none';
+            if (gridEl) gridEl.style.display = 'grid';
+
+            if (flashLoading) flashLoading.style.display = 'none';
+            if (flashError) flashError.style.display = 'none';
+            if (flashGrid) flashGrid.style.display = 'grid';
+
+            if (statusBadge) {
+                statusBadge.className = 'api-status-pill success';
+                if (statusText) statusText.innerText = '200 OK (Terhubung)';
+            }
+
+            if (countBadge) {
+                countBadge.innerText = `${(this.products || []).length} Produk`;
+            }
+        }
+    },
+
+    renderFlashSaleError() {
+        const container = document.getElementById('flashSaleGrid');
+        const flashError = document.getElementById('flashSaleErrorState');
+        if (container) container.style.display = 'none';
+        if (flashError) flashError.style.display = 'flex';
+    },
+
+    // ====================================================================
+    // API Testing Controls (Toolbar Buttons & Modal)
+    // ====================================================================
+    setupApiControls() {
+        // Tombol Coba Lagi pada Error State
+        const btnRetry = document.getElementById('btnRetryFetch');
+        if (btnRetry) {
+            btnRetry.addEventListener('click', () => {
+                this.retryFetch();
+            });
+        }
+
+        // Tombol Pulihkan Endpoint Default
+        const btnReset = document.getElementById('btnResetEndpoint');
+        if (btnReset) {
+            btnReset.addEventListener('click', () => {
+                this.resetDefaultApiUrl();
+            });
+        }
+
+        // Tombol Refresh API di Toolbar
+        const btnRefresh = document.getElementById('btnRefreshApi');
+        if (btnRefresh) {
+            btnRefresh.addEventListener('click', () => {
+                this.apiState.simulateDelay = false;
+                this.apiState.simulateError = false;
+                this.showToast('Memperbarui data dari REST API...', 'info');
+                this.fetchProducts();
+            });
+        }
+
+        // Tombol Simulasi Loading Delay (1.8s) untuk demonstrasi dosen/asdos
+        const btnSimLoading = document.getElementById('btnSimulateLoading');
+        if (btnSimLoading) {
+            btnSimLoading.addEventListener('click', () => {
+                this.apiState.simulateDelay = true;
+                this.apiState.simulateError = false;
+                this.showToast('Menguji visual loading spinner (Delay 1.8 detik)...', 'info');
+                this.fetchProducts().finally(() => {
+                    this.apiState.simulateDelay = false;
+                });
+            });
+        }
+
+        // Tombol Simulasi Error untuk demonstrasi tombol Coba Lagi ke dosen/asdos
+        const btnSimError = document.getElementById('btnSimulateError');
+        if (btnSimError) {
+            btnSimError.addEventListener('click', () => {
+                this.apiState.simulateError = true;
+                this.showToast('Memicu simulasi Error 404 pada REST API...', 'error');
+                this.fetchProducts();
+            });
+        }
+
+        // Tombol Buka Modal Custom URL API
+        const btnCustom = document.getElementById('btnCustomEndpoint');
+        if (btnCustom) {
+            btnCustom.addEventListener('click', () => {
+                this.openCustomApiModal();
+            });
+        }
+    },
+
+    openCustomApiModal() {
+        const modal = document.getElementById('customApiModal');
+        const input = document.getElementById('inputCustomApiUrl');
+        if (input) input.value = this.apiState.endpoint;
+        if (modal) modal.classList.add('active');
+    },
+
+    closeCustomApiModal() {
+        const modal = document.getElementById('customApiModal');
+        if (modal) modal.classList.remove('active');
+    },
+
+    applyCustomApiUrl() {
+        const input = document.getElementById('inputCustomApiUrl');
+        if (!input || !input.value.trim()) {
+            this.showToast('URL API tidak boleh kosong!', 'error');
+            return;
+        }
+        this.apiState.endpoint = input.value.trim();
+        this.apiState.simulateError = false;
+        this.closeCustomApiModal();
+        this.showToast('Menghubungkan ke endpoint baru: ' + this.apiState.endpoint, 'info');
+        this.fetchProducts();
+    },
+
+    resetDefaultApiUrl() {
+        this.apiState.endpoint = 'data/products.json';
+        this.apiState.simulateError = false;
+        this.closeCustomApiModal();
+        this.showToast('Endpoint dipulihkan ke default: data/products.json', 'info');
+        this.fetchProducts();
     },
 
     // ----------------------------------------------------
-    // Promo Flash Sale Carousel / Grid
+    // Promo Flash Sale Carousel / Grid (Task 02: Dynamic API Data)
     // ----------------------------------------------------
     renderFlashSale() {
         const container = document.getElementById('flashSaleGrid');
         if (!container) return;
 
-        const products = DataService.getProducts();
-        const promoProducts = products.filter(p => p.isPromo).slice(0, 4);
+        // Ambil data produk yang sudah di-fetch dari API
+        const allProducts = (this.products && this.products.length > 0) ? this.products : DataService.getProducts();
+        const promoProducts = allProducts.filter(p => p.isPromo).slice(0, 4);
 
         container.innerHTML = promoProducts.map(p => this.createProductCardHTML(p)).join('');
     },
 
     // ----------------------------------------------------
-    // Category Quick Tiles
+    // Category Quick Tiles (Task 02: Dynamic Count dari API Data)
     // ----------------------------------------------------
     renderCategoryTiles() {
         const container = document.getElementById('categoriesGrid');
         if (!container) return;
 
+        const allProducts = (this.products && this.products.length > 0) ? this.products : DataService.getProducts();
+
+        const countCategory = (catName) => {
+            return allProducts.filter(p => p.category.toLowerCase() === catName.toLowerCase()).length;
+        };
+
         const categories = [
-            { name: 'Cat Mobil', icon: 'fa-car-side', count: '5 Produk' },
-            { name: 'Cat Tembok', icon: 'fa-paint-roller', count: '3 Produk' },
-            { name: 'Cat Kayu', icon: 'fa-tree', count: '2 Produk' },
-            { name: 'Cat Besi', icon: 'fa-shield-halved', count: '2 Produk' },
-            { name: 'Cat Eksterior', icon: 'fa-house-chimney-crack', count: '2 Produk' },
-            { name: 'Aksesoris', icon: 'fa-spray-can-sparkles', count: '4 Produk' }
+            { name: 'Cat Mobil', icon: 'fa-car-side', count: `${countCategory('Cat Mobil')} Produk` },
+            { name: 'Cat Tembok', icon: 'fa-paint-roller', count: `${countCategory('Cat Tembok')} Produk` },
+            { name: 'Cat Kayu', icon: 'fa-tree', count: `${countCategory('Cat Kayu')} Produk` },
+            { name: 'Cat Besi', icon: 'fa-shield-halved', count: `${countCategory('Cat Besi')} Produk` },
+            { name: 'Cat Eksterior', icon: 'fa-house-chimney-crack', count: `${countCategory('Cat Eksterior')} Produk` },
+            { name: 'Aksesoris', icon: 'fa-spray-can-sparkles', count: `${countCategory('Aksesoris')} Produk` }
         ];
 
         container.innerHTML = categories.map(cat => `
@@ -87,13 +433,14 @@ const StoreApp = {
     },
 
     // ----------------------------------------------------
-    // Product Catalog Rendering & Filtering
+    // Product Catalog Rendering & Filtering (Task 02: Dynamic DOM Manipulation)
     // ----------------------------------------------------
     renderProducts() {
         const container = document.getElementById('productsGrid');
         if (!container) return;
 
-        let products = DataService.getProducts();
+        // Sumber data langsung dari this.products (hasil parsing JSON dari REST API)
+        let products = (this.products && this.products.length > 0) ? [...this.products] : DataService.getProducts();
 
         // Filter by Category
         if (this.currentCategory !== 'Semua') {
@@ -105,7 +452,7 @@ const StoreApp = {
             products = products.filter(p => p.isPromo);
         }
 
-        // Filter by Search Query (if searching in catalog)
+        // Filter by Search Query (live search pada API data)
         if (this.searchQuery.trim() !== '') {
             const q = this.searchQuery.toLowerCase();
             products = products.filter(p => 
@@ -138,6 +485,7 @@ const StoreApp = {
             return;
         }
 
+        // TASK 02: Manipulasi DOM Dinamis dari Data REST API
         container.innerHTML = products.map(p => this.createProductCardHTML(p)).join('');
     },
 
@@ -307,7 +655,12 @@ const StoreApp = {
     // Product Quick View Modal
     // ----------------------------------------------------
     openProductModal(productId) {
-        const product = DataService.getProductById(productId);
+        let product = (this.products && this.products.length > 0)
+            ? this.products.find(p => p.id === productId)
+            : null;
+        if (!product) {
+            product = DataService.getProductById(productId);
+        }
         if (!product) return;
 
         this.selectedProduct = product;
