@@ -1,0 +1,129 @@
+{
+  "info": {
+    "name": "AutoGloss Week 10 - REST API CRUD & Validation",
+    "_postman_id": "4a71b290-77a1-419b-bc23-c9182390f110",
+    "description": "Koleksi Postman untuk pengujian Materi Week 10 Pemrograman Web: From CRUD to Application Flow.\nMencakup:\n01. GET /api/products (List)\n02. POST /api/products (Create with 201 Created)\n03. POST /api/products (Validation Error with 422 Unprocessable)\n04. GET /api/products/1 (Detail with 200 OK)\n05. GET /api/products/9999 (Not Found with 404)\n06. PUT /api/products/1 (Update with 200 OK)\n07. DELETE /api/products/1 (Delete with 200 OK)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01. GET /api/products (List All Products - 200 OK)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/products",
+          "host": ["{{base_url}}"],
+          "path": ["api", "products"]
+        }
+      }
+    },
+    {
+      "name": "02. POST /api/products (Create Valid Product - 201 Created)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"category_id\": 1,\n  \"code\": \"PRD-NEW-01\",\n  \"name\": \"SuperGloss Nano Coating Ceramic 500ml\",\n  \"sub_category\": \"Nano Coating\",\n  \"price\": 185000,\n  \"stock\": 20,\n  \"unit\": \"500 ml\",\n  \"description\": \"Cairan pelindung cat bodi mobil kilau ekstra hidrofobik.\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/products",
+          "host": ["{{base_url}}"],
+          "path": ["api", "products"]
+        }
+      }
+    },
+    {
+      "name": "03. POST /api/products (Validation Error - 422 Unprocessable)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"description\": \"Payload tanpa nama, kode, kategori, dan harga\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/products",
+          "host": ["{{base_url}}"],
+          "path": ["api", "products"]
+        }
+      }
+    },
+    {
+      "name": "04. GET /api/products/1 (Detail Single Product - 200 OK)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/products/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "products", "1"]
+        }
+      }
+    },
+    {
+      "name": "05. GET /api/products/9999 (Product Not Found - 404 Not Found)",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/products/9999",
+          "host": ["{{base_url}}"],
+          "path": ["api", "products", "9999"]
+        }
+      }
+    },
+    {
+      "name": "06. PUT /api/products/1 (Update Product - 200 OK)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"category_id\": 1,\n  \"code\": \"PRD-001\",\n  \"name\": \"SuperGloss Candy Red Metallic (Updated Special Edition)\",\n  \"price\": 195000,\n  \"stock\": 40,\n  \"unit\": \"1 Liter Kaleng\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/api/products/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "products", "1"]
+        }
+      }
+    },
+    {
+      "name": "07. DELETE /api/products/1 (Delete Product - 200 OK)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Accept", "value": "application/json" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/products/1",
+          "host": ["{{base_url}}"],
+          "path": ["api", "products", "1"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000"
+    }
+  ]
+}

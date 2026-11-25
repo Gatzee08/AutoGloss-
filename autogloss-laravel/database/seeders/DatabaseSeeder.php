@@ -7,7 +7,10 @@ use App\Models\Customer;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\Program;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
@@ -391,6 +394,30 @@ class DatabaseSeeder extends Seeder
                     'total' => $item['price'] * $item['qty'],
                 ]);
             }
+        }
+
+        // 5. PENGGUNA UNTUK JWT AUTHENTICATION (Sesuai Slide 1 Task 03)
+        User::firstOrCreate(['email' => 'user@example.com'], [
+            'name' => 'Demo User (Week 11)',
+            'email' => 'user@example.com',
+            'password' => Hash::make('password'),
+        ]);
+
+        User::firstOrCreate(['email' => 'admin@autogloss.com'], [
+            'name' => 'Admin AutoGloss',
+            'email' => 'admin@autogloss.com',
+            'password' => Hash::make('password'),
+        ]);
+
+        // 6. DATA PROGRAM UNTUK PENGUJIAN PROTECTED API (GET /api/programs)
+        $programs = [
+            ['name' => 'Program A', 'description' => 'Program Pelatihan AutoGloss Ceramic Coating Specialist'],
+            ['name' => 'Program B', 'description' => 'Program Sertifikasi Paint Protection Film (PPF) AutoGloss'],
+            ['name' => 'Program C', 'description' => 'Program Kemitraan Bengkel Body Repair & Oven Painting'],
+        ];
+
+        foreach ($programs as $prog) {
+            Program::firstOrCreate(['name' => $prog['name']], $prog);
         }
     }
 }

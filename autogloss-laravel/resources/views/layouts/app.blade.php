@@ -52,7 +52,7 @@
                             <div class="font-extrabold text-lg tracking-wider text-white flex items-center gap-1.5">
                                 AUTOGLOSS <span class="text-xs px-2 py-0.5 rounded-full bg-brand-crimson text-white font-bold uppercase tracking-widest">HUB</span>
                             </div>
-                            <p class="text-[11px] text-slate-400 font-medium">Laravel 11 CRUD & ORM</p>
+                            <p class="text-[11px] text-slate-400 font-medium">Laravel 11 &bull; Week 9, 10 & 11</p>
                         </div>
                     </a>
                 </div>
@@ -74,13 +74,19 @@
                     <a href="{{ route('orders.index') }}" class="px-3 py-2 rounded-lg text-sm font-semibold transition-all {{ request()->routeIs('orders.*') ? 'bg-brand-crimson text-white shadow-md shadow-brand-crimson/20' : 'text-slate-300 hover:text-white hover:bg-slate-800' }}">
                         <i class="fa-solid fa-receipt mr-1.5"></i> Pesanan
                     </a>
+                    <a href="{{ route('week10.flow') }}" class="px-3 py-2 rounded-lg text-sm font-bold transition-all {{ request()->routeIs('week10.*') ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20' : 'text-indigo-400 hover:text-white hover:bg-slate-800' }}">
+                        <i class="fa-solid fa-arrows-split-up-and-left mr-1.5"></i> Week 10 REST
+                    </a>
+                    <a href="{{ route('jwt.testing') }}" class="px-3 py-2 rounded-lg text-sm font-bold transition-all {{ request()->routeIs('jwt.testing') ? 'bg-amber-500 text-slate-900 shadow-md shadow-amber-500/20' : 'text-amber-400 hover:text-white hover:bg-slate-800' }}">
+                        <i class="fa-solid fa-key mr-1.5"></i> Week 11 JWT
+                    </a>
                 </div>
 
                 <!-- Right Action / Info -->
                 <div class="flex items-center gap-3">
-                    <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                        Week 9: CRUD + ORM
+                    <span class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                        <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                        Week 10 Flow & REST
                     </span>
                     <a href="{{ route('products.create') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-bold bg-gradient-to-r from-brand-crimson to-brand-crimsonDark text-white shadow-md hover:brightness-110 transition-all">
                         <i class="fa-solid fa-plus"></i>
